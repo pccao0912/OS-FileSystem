@@ -57,6 +57,7 @@ int fs_umount(void)
 	for (int i = 0; i < superblock.fat_amount; ++i) {
 		block_write(i + 1, &(FAT[i * FS_FAT_ENTRY_MAX_COUNT]))
 	}
+	return 0;
 }
 
 int fs_info(void)
