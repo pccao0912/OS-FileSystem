@@ -76,7 +76,17 @@ int fs_info(void)
 
 int fs_create(const char *filename)
 {
-	/* TODO: Phase 2 */
+	int index = 0;
+	for (int i = 0; i < FS_FILE_MAX_COUNT; ++i) {
+		if (root_directory.entry_array[free_index].filename[0] == '\0') {
+			index = i;
+			break;
+		}
+	}
+	strcpy(root_directory.entry_array[index].filename, filename);
+	root_directory.entry_array[index].file_size = 0;
+	root_directory.entry_array[index].datablk_start_index = 0xFFFF;  // FAT EOC = 0xFFFF
+	return 0;
 }
 
 int fs_delete(const char *filename)
