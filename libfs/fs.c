@@ -54,8 +54,8 @@ int fs_mount(const char *diskname)
 int fs_umount(void)
 {
 	block_write(superblock.rdir_blk, &root_dir);
-	for (int i = 0; i < superblock.fat_amount; ++i) {
-		block_write(i + 1, &(FAT[i * FS_FAT_ENTRY_MAX_COUNT]))
+	for (int i = 1; i < superblock.fat_amount + 1; ++i) {
+		block_write(i, &(FAT[i-1 * FS_FAT_ENTRY_MAX_COUNT]))
 	}
 	return 0;
 }
