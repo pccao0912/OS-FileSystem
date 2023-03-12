@@ -96,7 +96,14 @@ int fs_delete(const char *filename)
 
 int fs_ls(void)
 {
-	/* TODO: Phase 2 */
+	fprintf(stdout, "FS Ls:\n");
+	for (int i = 0; i < FS_FILE_MAX_COUNT; i++) {
+		fprintf(stdout, "file: %s, size: %d, data_blk: %d\n", 
+			root_directory.entry_array[i].filename, 
+			root_directory.entry_array[i].file_size, 
+			root_directory.entry_array[i].datablk_start_index);
+	}
+	return 0;
 }
 
 int fs_open(const char *filename)
