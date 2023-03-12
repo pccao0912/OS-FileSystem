@@ -7,7 +7,16 @@
 #include "disk.h"
 #include "fs.h"
 
-/* TODO: Phase 1 */
+struct superblock {
+	uint64_t signature;
+	uint16_t total_blocks;
+	uint16_t rootdir_blk_index;
+	uint16_t datablk_start_index;
+	uint16_t datablk_amount;
+	uint8_t  fat_amount;
+	uint8_t  unused[4079];
+}__attribute__((packed));
+
 
 int fs_mount(const char *diskname)
 {
