@@ -34,7 +34,7 @@ int fs_mount(const char *diskname)
 {
 	/* TODO: Phase 1 */
 	int opendisk = block_disk_open(diskname);
-	if(opendisk == - 1){
+	if (opendisk == - 1) {
 		return -1;	
 	}
 }
