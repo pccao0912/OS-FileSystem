@@ -36,7 +36,6 @@ struct root_directory root_directory;
 
 int fs_mount(const char *diskname)
 {
-	/* TODO: Phase 1 */
 	int opendisk = block_disk_open(diskname);
 	if (opendisk == - 1) {
 		return -1;	
@@ -89,8 +88,6 @@ int fs_create(const char *filename)
 
 int fs_delete(const char *filename)
 {
-	/* TODO: Phase 2 */
-		/* TODO: Phase 2 */
 	int index = 0;
 	for (int i = 0; i < FS_FILE_MAX_COUNT; ++i) {
 		if (root_directory.entry_array[i].filename[0] == filename) {
