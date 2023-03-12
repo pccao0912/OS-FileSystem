@@ -41,6 +41,14 @@ int fs_mount(const char *diskname)
 	if (opendisk == - 1) {
 		return -1;	
 	}
+	block_read(0, &superblock);
+	block_read(superblock.rootdir_blk_index, &root_directory);
+	for ( int i = 0; i < superblock.fat_amount; i++) {
+		block_read(i+1, &(FAT[i * BLOCK_SIZE/2)]));
+	}
+	return 0;
+	
+	
 }
 
 int fs_umount(void)
