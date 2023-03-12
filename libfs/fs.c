@@ -47,8 +47,6 @@ int fs_mount(const char *diskname)
 		block_read(i+1, &(FAT[i * BLOCK_SIZE/2)]));
 	}
 	return 0;
-	
-	
 }
 
 int fs_umount(void)
@@ -92,6 +90,26 @@ int fs_create(const char *filename)
 int fs_delete(const char *filename)
 {
 	/* TODO: Phase 2 */
+		/* TODO: Phase 2 */
+	int index = 0;
+	for (int i = 0; i < FS_FILE_MAX_COUNT; ++i) {
+		if (root_directory.entry_array[i].filename[0] == filename) {
+			index = i;
+			break;
+		}
+	}
+	root_directory.entry_array[index].filename[0] = '\0';
+	root_directory.entry_array[index].file_size = 0;
+	if (root_directory.entry_array[index].datablk_start_index != 0xffff) {
+		int delete_index = root_directory.entry_array[index].datablk_start_index;
+		while (delete_index != 0xffff) {
+			int FAT_num = FAT[delete_index];
+			FAT[delete_index] = 0x0;
+			delete_index = FAT_num;
+		}
+	}
+	root_directory.entry_array[index].datablk_start_index = '\0';
+	return 0;
 }
 
 int fs_ls(void)
