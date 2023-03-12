@@ -33,6 +33,10 @@ struct root_directory {
 int fs_mount(const char *diskname)
 {
 	/* TODO: Phase 1 */
+	int opendisk = block_disk_open(diskname);
+	if(opendisk == - 1){
+		return -1;	
+	}
 }
 
 int fs_umount(void)
