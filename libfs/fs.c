@@ -19,6 +19,17 @@ struct superblock {
 
 uint16_t FAT[8192];
 
+struct entry {
+	uint8_t  filename[FS_FILENAME_LEN];
+	uint32_t file_size;
+	uint16_t datablk_start_index;
+	uint8_t  unused[10];
+}__attribute__((packed));
+
+struct root_directory {
+	struct entry entry_array[FS_FILE_MAX_COUNT];
+}__attribute__((packed));
+
 int fs_mount(const char *diskname)
 {
 	/* TODO: Phase 1 */
