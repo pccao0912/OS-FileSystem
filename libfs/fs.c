@@ -30,6 +30,10 @@ struct root_directory {
 	struct entry entry_array[FS_FILE_MAX_COUNT];
 }__attribute__((packed));
 
+// global
+struct superblock superblock;
+struct root_directory root_directory;
+
 int fs_mount(const char *diskname)
 {
 	/* TODO: Phase 1 */
