@@ -65,7 +65,13 @@ int fs_umount(void)
 
 int fs_info(void)
 {
-	/* TODO: Phase 1 */
+	fprintf(stdout, "FS Info:\n");
+	fprintf(stdout, "total_blk_count=%d\n",		superblock.total_blocks);
+	fprintf(stdout, "fat_blk_count=%d\n",		superblock.fat_amount);
+	fprintf(stdout, "rdir_blk=%d\n",		superblock.rootdir_blk_index);
+	fprintf(stdout, "data_blk=%d\n",		superblock.datablk_start_index);
+	fprintf(stdout, "data_blk_count=%d\n",		superblock.datablk_amount);
+	return 0;
 }
 
 int fs_create(const char *filename)
