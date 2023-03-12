@@ -78,7 +78,7 @@ int fs_create(const char *filename)
 {
 	int index = 0;
 	for (int i = 0; i < FS_FILE_MAX_COUNT; ++i) {
-		if (root_directory.entry_array[free_index].filename[0] == '\0') {
+		if (root_directory.entry_array[i].filename[0] == '\0') {
 			index = i;
 			break;
 		}
