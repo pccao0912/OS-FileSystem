@@ -53,10 +53,13 @@ int fs_mount(const char *diskname)
 
 int fs_umount(void)
 {
-	block_write(superblock.rdir_blk, &root_dir);
+	block_write(superblock.rootdir_blk_index, &root_directory);
 	for (int i = 1; i < superblock.fat_amount + 1; ++i) {
 		block_write(i, &(FAT[i-1 * FS_FAT_ENTRY_MAX_COUNT]))
 	}
+	superblock = (const struct superblock){ 0 };
+	memset(FAT, 0, sizeof(FAT));
+	root_directory = (const struct root_directory){ 0 };
 	return 0;
 }
 
