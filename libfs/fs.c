@@ -18,6 +18,7 @@ struct superblock {
 }__attribute__((packed));
 
 uint16_t FAT[8192];
+
 int fs_mount(const char *diskname)
 {
 	/* TODO: Phase 1 */
