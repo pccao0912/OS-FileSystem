@@ -53,7 +53,10 @@ int fs_mount(const char *diskname)
 
 int fs_umount(void)
 {
-	/* TODO: Phase 1 */
+	block_write(superblock.rdir_blk, &root_dir);
+	for (int i = 0; i < superblock.fat_amount; ++i) {
+		block_write(i + 1, &(FAT[i * FS_FAT_ENTRY_MAX_COUNT]))
+	}
 }
 
 int fs_info(void)
