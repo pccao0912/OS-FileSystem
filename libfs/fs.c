@@ -30,9 +30,15 @@ struct root_directory {
 	struct entry entry_array[FS_FILE_MAX_COUNT];
 }__attribute__((packed));
 
+struct file_descriptor {
+	struct entry *entry;
+	size_t offset;
+}
+
 // global
 struct superblock superblock;
 struct root_directory root_directory;
+struct file_descriptor fd_table[FS_OPEN_MAX_COUNT];
 
 int fs_mount(const char *diskname)
 {
@@ -128,7 +134,9 @@ int fs_open(const char *filename)
 
 int fs_close(int fd)
 {
-	/* TODO: Phase 3 */
+	fd_table[fd].entry = NULL;
+	fd_list[fd].offset = 0;
+	return 0;
 }
 
 int fs_stat(int fd)
@@ -138,7 +146,10 @@ int fs_stat(int fd)
 
 int fs_lseek(int fd, size_t offset)
 {
-	/* TODO: Phase 3 */
+	int file_size = fs_stat(fd);
+	fd_list[fd].offset = offset;
+
+	return 0;
 }
 
 int fs_write(int fd, void *buf, size_t count)
