@@ -129,7 +129,22 @@ int fs_ls(void)
 
 int fs_open(const char *filename)
 {
-	/* TODO: Phase 3 */
+	int fd_table_index;
+	int file_index = 0;
+	for (int i = 0; i < FS_FILE_MAX_COUNT; i ++) {
+		if (strcmp((char*)root_directory.entry_array[i].filename , filename) == 0) {
+			file_index = i;
+			break;
+		}
+	}
+	for (int j = 0; j < FS_OPEN_MAX_COUNT; j ++) {
+		if (fd_table[j] == NULL) {
+			fd_table_index = j;
+			break;
+		}
+	}
+	fd_table[fd_table_index].entry = &(root_directory.entry_array[file_index]);
+	return fd_table_index;
 }
 
 int fs_close(int fd)
