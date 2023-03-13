@@ -156,7 +156,7 @@ int fs_close(int fd)
 
 int fs_stat(int fd)
 {
-	/* TODO: Phase 3 */
+	return fd_table[fd].entry -> file_size;
 }
 
 int fs_lseek(int fd, size_t offset)
