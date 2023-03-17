@@ -54,6 +54,29 @@ int block_create(){
 	}
 	return index;
 }
+int rdir_free_blocks() {
+	int counter = FS_FILE_MAX_COUNT;
+	for (int i = 0; i <FS_FILE_MAX_COUNT; i++) {
+		if (root_directory.entry_array[i].filename[0] == '\0') {
+			continue;
+		}else {
+		counter --;
+		}
+	}
+	return counter;
+}
+
+int fat_free_blocks() {
+	int counter = superblock.datablk_amount;
+	for (int i = 0; i <superblock.datablk_amount; i++) {
+		if (FAT[i] == '\0') {
+			continue;
+		}else {
+			counter --;
+		}
+	}
+	return counter;
+}
 
 int fs_mount(const char *diskname)
 {
@@ -83,12 +106,16 @@ int fs_umount(void)
 
 int fs_info(void)
 {
+	int rdir_free = rdir_free_blocks();
+	int fat_free = fat_free_blocks();
 	fprintf(stdout, "FS Info:\n");
 	fprintf(stdout, "total_blk_count=%d\n",		superblock.total_blocks);
 	fprintf(stdout, "fat_blk_count=%d\n",		superblock.fat_amount);
 	fprintf(stdout, "rdir_blk=%d\n",		superblock.rootdir_blk_index);
 	fprintf(stdout, "data_blk=%d\n",		superblock.datablk_start_index);
 	fprintf(stdout, "data_blk_count=%d\n",		superblock.datablk_amount);
+	fprintf(stdout, "fat_free_ratio=%d/%d\n",	fat_free,	superblock.datablk_amount); 
+	fprintf(stdout, "rdir_free_ratio=%d/%d\n",	rdir_free,	FS_FILE_MAX_COUNT);
 	return 0;
 }
 
