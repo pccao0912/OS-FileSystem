@@ -33,7 +33,7 @@ struct root_directory {
 struct file_descriptor {
 	struct entry *entry;
 	size_t offset;
-}
+};
 
 // global
 struct superblock superblock;
@@ -73,7 +73,7 @@ int fs_umount(void)
 {
 	block_write(superblock.rootdir_blk_index, &root_directory);
 	for (int i = 1; i < superblock.fat_amount + 1; ++i) {
-		block_write(i, &(FAT[i-1 * BLOCK_SIZE/2]))
+		block_write(i, &(FAT[i-1 * BLOCK_SIZE/2]));
 	}
 	superblock = (const struct superblock){ 0 };
 	memset(FAT, 0, sizeof(FAT));
@@ -101,7 +101,7 @@ int fs_create(const char *filename)
 			break;
 		}
 	}
-	strcpy(root_directory.entry_array[index].filename, filename);
+	strcpy((char*)root_directory.entry_array[index].filename, filename);
 	root_directory.entry_array[index].file_size = 0;
 	root_directory.entry_array[index].datablk_start_index = 0xFFFF;  // FAT EOC = 0xFFFF
 	return 0;
@@ -111,7 +111,7 @@ int fs_delete(const char *filename)
 {
 	int index = 0;
 	for (int i = 0; i < FS_FILE_MAX_COUNT; ++i) {
-		if (root_directory.entry_array[i].filename[0] == filename) {
+		if (strcmp((char*)root_directory.entry_array[i].filename, filename) == 0) {
 			index = i;
 			break;
 		}
@@ -153,7 +153,7 @@ int fs_open(const char *filename)
 		}
 	}
 	for (int j = 0; j < FS_OPEN_MAX_COUNT; j ++) {
-		if (fd_table[j] == NULL) {
+		if (fd_table[j].entry == NULL) {
 			fd_table_index = j;
 			break;
 		}
@@ -165,7 +165,7 @@ int fs_open(const char *filename)
 int fs_close(int fd)
 {
 	fd_table[fd].entry = NULL;
-	fd_list[fd].offset = 0;
+	fd_table[fd].offset = 0;
 	return 0;
 }
 
@@ -176,9 +176,7 @@ int fs_stat(int fd)
 
 int fs_lseek(int fd, size_t offset)
 {
-	int file_size = fs_stat(fd);
-	fd_list[fd].offset = offset;
-
+	fd_table[fd].offset = offset;
 	return 0;
 }
 
