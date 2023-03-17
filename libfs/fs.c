@@ -39,24 +39,9 @@ struct file_descriptor {
 struct superblock superblock;
 struct root_directory root_directory;
 struct file_descriptor fd_table[FS_OPEN_MAX_COUNT];
+uint8_t bounce[BLOCK_SIZE];
 
 // helper functs
-
-uint8_t bounce[BLOCK_SIZE];
-#define error(fmt, ...) \
-	fprintf(stderr, "%s: "fmt"\n", __func__, ##__VA_ARGS__)
-
-#define fs_error(...)				\
-{							\
-	error(__VA_ARGS__);	\
-	return -1;					\
-}
-
-#define fs_perror(...)				\
-{							\
-	perror(__VA_ARGS__);	\
-	return -1;					\
-}
 uint16_t FAT_iterator(uint16_t block_index, uint16_t count)
 {
 	for (uint16_t i = 0; i < count; ++i) {
@@ -244,33 +229,19 @@ int fs_lseek(int fd, size_t offset)
 }
 
 int fs_write(int fd, void *buf, size_t count)
-{
+{	
+    if (count == 0)
+		return 0;//必须要有
 	uint32_t total_written_count = 0;
 	uint16_t offset_in_one_block = fd_table[fd].offset % BLOCK_SIZE;
-	uint16_t current_block_index;
+	uint16_t current_index;
 	uint16_t iteration_written_count;
     int finish_flag = 0;
-
-	/* Error Checking */
-	// Check if FS is mounted
-	if (superblock.signature != 0x5346303531534345)
-		fs_error("Filesystem not mounted");
-
-	// Check if file descriptor is closed or out of bounds
-	if (fd_table[fd].entry == NULL || fd >= FS_OPEN_MAX_COUNT)
-		fs_error("Invalid file descriptor");
-
-	if (buf == NULL)
-		fs_error("buf is NULL");
-
-	if (count == 0)
-		return 0;//必须要有
-
 	// checkif exist data block.
 	if (fd_table[fd].entry->datablk_start_index == 0xFFFF) {
-		current_block_index = block_create(fd);
+		current_index = block_create(fd);
 	} else {
-		current_block_index = FAT_iterator(fd_table[fd].entry->datablk_start_index, fd_table[fd].offset / BLOCK_SIZE);
+		current_index = FAT_iterator(fd_table[fd].entry->datablk_start_index, fd_table[fd].offset / BLOCK_SIZE);
 	}
     while (finish_flag != 1) {
 		if ( count - total_written_count >= (unsigned int)BLOCK_SIZE - offset_in_one_block) {
@@ -279,16 +250,14 @@ int fs_write(int fd, void *buf, size_t count)
 				iteration_written_count = count - total_written_count;
 		}
         //read whole block into bounce
-        block_read(current_block_index +superblock.datablk_start_index, &bounce );
+        block_read(current_index +superblock.datablk_start_index, &bounce );
         //copy the aimed area of data into bounce correct position
         memcpy(&bounce[offset_in_one_block], buf+total_written_count, iteration_written_count);
-        total_written_count += iteration_written_count;
-        //update file offset to the end of the current position
-        fd_table[fd].offset += iteration_written_count;
         //write back bounce into datablock
-        block_write(current_block_index +superblock.datablk_start_index, &bounce );
+
+        block_write(current_index +superblock.datablk_start_index, &bounce );
         //iterate through FAT[] or create new FAT entry
-		if (FAT[current_block_index] == 0xFFFF) {
+		if (FAT[current_index] == 0xFFFF) {
             int free_index;
             for (int i = 1; i < superblock.fat_amount * (BLOCK_SIZE/2); i++) {
                 if (FAT[i] == 0){
@@ -296,14 +265,18 @@ int fs_write(int fd, void *buf, size_t count)
                     break;
                 }
             }
-            FAT[current_block_index] = free_index;
+            FAT[current_index] = free_index;
             FAT[free_index] = 0xFFFF;
-			current_block_index = free_index;
+			current_index = free_index;
 		} else {
-			current_block_index = FAT_iterator(current_block_index, 1);
+			current_index = FAT_iterator(current_index, 1);
 		}
+        total_written_count += iteration_written_count;
+        //update file offset to the end of the current position
+        fd_table[fd].offset += iteration_written_count;
         //since after 1st dblock, their offset are at the beginning of the block
         offset_in_one_block = 0;
+
         if(count - total_written_count == 0) {
             finish_flag =1;
         }
@@ -320,7 +293,33 @@ int fs_read(int fd, void *buf, size_t count)
 {
 	uint32_t total_read_count = 0;
 	uint16_t offset_in_one_block = fd_table[fd].offset % BLOCK_SIZE;
-	uint16_t current_block_index;
-	uint16_t iteration_written_count;
+	uint16_t current_index;
+	uint16_t iteration_read_count;
     int finish_flag = 0;
+    current_index = FAT_iterator(fd_table[fd].entry->datablk_start_index, fd_table[fd].offset / BLOCK_SIZE);
+    while(finish_flag != 1) {
+        //In this way the amount of data each iteration will be restricted according to its size
+		if ( count - total_read_count >= (unsigned int)BLOCK_SIZE - offset_in_one_block) {
+				iteration_read_count = (unsigned int)BLOCK_SIZE - offset_in_one_block;
+		} else {
+				iteration_read_count = count - total_read_count;
+		}
+        //read block into bounce buffer
+        block_read(current_index + superblock.datablk_start_index, &bounce);
+        //copy aimed area memory into buffer size : iteration__read_count position: offset_in_one_block
+        memcpy(buf + total_read_count, &bounce[offset_in_one_block], iteration_read_count);
+        total_read_count += iteration_read_count;
+        fd_table[fd].offset += iteration_read_count;
+        //for the following the offset in one block should be 0
+        offset_in_one_block = 0;
+        if (count - total_read_count == 0 ){
+            finish_flag = 1;
+        }
+        if (FAT[current_index] == 0xFFFF) {
+            break;
+        } else {
+            current_index = FAT_iterator(current_index,1);
+        }
+    }
+    return total_read_count;
 }
