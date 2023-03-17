@@ -113,6 +113,9 @@ int fs_mount(const char *diskname)
 			return -1;
 		}
 	}
+	if (superblock.signature != 0x5346303531534345) {
+		return -1;
+	}
 	return 0;
 }
 
@@ -138,7 +141,7 @@ int fs_umount(void)
 	superblock = (const struct superblock){ 0 };
 	memset(FAT, 0, sizeof(FAT));
 	root_directory = (const struct root_directory){ 0 };
-    memset(bounce, 0, sizeof(bounce));
+   	memset(bounce, 0, sizeof(bounce));
 	return 0;
 }
 
