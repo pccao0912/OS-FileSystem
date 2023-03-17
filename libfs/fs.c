@@ -199,26 +199,26 @@ int fs_write(int fd, void *buf, size_t count)
 		}
 		root_directory.entry_array[file_in_direc].datablk_start_index = new_block_index;
 		first_dblock = new_block_index;
-		temp_filedesc->entry->datablk_start_index = new_block_index;
+		temp_filedesc.entry->datablk_start_index = new_block_index;
 		FAT[new_block_index] = 0xFFFF;
 	}
 	int remaining = count;
-	char * bounce_buffer = malloc(BLOCK_SIZE);
+	char * bounce = malloc(BLOCK_SIZE);
 	int buffer_offset = 0;
 	while (remaining > 0) {
-		int aimmed_index  = (temp_filedesc->offset / BLOCK_SIZE) + first_dblock + superblock.datablk_start_index;
-		int block_offset  = temp_filedesc->offset % BLOCK_SIZE;
+		int aimmed_index  = (temp_filedesc.offset / BLOCK_SIZE) + first_dblock + superblock.datablk_start_index;
+		int block_offset  = temp_filedesc.offset % BLOCK_SIZE;
 		block_read(aimmed_index,bounce);
 		if (block_offset + remaining <= BLOCK_SIZE) {
 			memcpy(bounce+block_offset, buf+buffer_offset, remaining);
-			temp_filedesc-> offset += remaining;
+			temp_filedesc.offset += remaining;
 			buffer_offset += remaining;
 			remaining = 0;
 			block_write(aimmed_index,bounce);
 		} else if (block_offset + remaining > BLOCK_SIZE) {
 			int block_remain = BLOCK_SIZE - block_offset;
 			memcpy(bounce+block_offset, buf+buffer_offset, block_remain);
-			temp_filedesc->offset += block_remain;
+			temp_filedesc.offset += block_remain;
 			buffer_offset += block_remain;
 			remaining = remaining - block_remain;
 			block_write(aimmed_index,bounce);
@@ -227,8 +227,8 @@ int fs_write(int fd, void *buf, size_t count)
 			FAT[new_block_index] = 0xFFFF;
 		}
 	}
-	if (fd_list[fd].entry->file_size < fd_list[fd].offset) {
-		fd_list[fd].entry->file_size = fd_list[fd].offset;
+	if (fd_table[fd].entry->file_size < fd_table[fd].offset) {
+		fd_table[fd].entry->file_size = fd_table[fd].offset;
 	}
 	block_write(super_block->ROOT_DIRECTORY_BLOCK, &root_directory);
 	for (int i = 1; i < superblock.fat_amount + 1; ++i) {
