@@ -230,13 +230,12 @@ int fs_write(int fd, void *buf, size_t count)
 	if (fd_table[fd].entry->file_size < fd_table[fd].offset) {
 		fd_table[fd].entry->file_size = fd_table[fd].offset;
 	}
-	block_write(super_block->ROOT_DIRECTORY_BLOCK, &root_directory);
+	block_write(superblock->ROOT_DIRECTORY_BLOCK, &root_directory);
 	for (int i = 1; i < superblock.fat_amount + 1; ++i) {
 		block_write(i, &(FAT[i-1 * BLOCK_SIZE/2]));
 	}
 	return buffer_offset;	
 }
-
 
 int fs_read(int fd, void *buf, size_t count)
 {
