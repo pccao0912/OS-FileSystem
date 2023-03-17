@@ -113,10 +113,11 @@ int fs_umount(void)
 		block_write(i + 1, &(FAT[i * (BLOCK_SIZE/2)]));
 	}
 
-	for (int i = 0; i < FS_OPEN_MAX_COUNT; ++i) {
-		if (fd_table[i].entry != NULL)
-			fs_error("There exist open file descriptors");
-	}
+	// for (int i = 0; i < FS_OPEN_MAX_COUNT; ++i) {
+	// 	if (fd_table[i].entry != NULL){
+	// 		return -1;
+	// 	}
+	// }
 	superblock = (const struct superblock){ 0 };
 	memset(FAT, 0, sizeof(FAT));
 	root_directory = (const struct root_directory){ 0 };
