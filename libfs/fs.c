@@ -231,7 +231,7 @@ int fs_write(int fd, void *buf, size_t count)
 	if (fd_list[fd].entry->file_size < fd_list[fd].offset) {
 			fd_list[fd].entry->file_size = fd_list[fd].offset;
 	}
-		
+	return buffer_written;
 }
 
 int fs_read(int fd, void *buf, size_t count)
