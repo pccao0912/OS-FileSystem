@@ -111,17 +111,16 @@ int fs_umount(void)
 	block_write(superblock.rootdir_blk_index, &root_directory);
 	for (int i = 0; i < superblock.fat_amount; ++i) {
 		block_write(i + 1, &(FAT[i * (BLOCK_SIZE/2)]));
-	}// 错
-    for (int i = 0; i < FS_OPEN_MAX_COUNT; ++i) {
+	}
+    
+	for (int i = 0; i < FS_OPEN_MAX_COUNT; ++i) {
 		if (fd_table[i].entry != NULL)
 			fs_error("There exist open file descriptors");
 	}
-
 	superblock = (const struct superblock){ 0 };
 	memset(FAT, 0, sizeof(FAT));
 	root_directory = (const struct root_directory){ 0 };
     memset(bounce, 0, sizeof(bounce));
-
 	return 0;
 }
 
