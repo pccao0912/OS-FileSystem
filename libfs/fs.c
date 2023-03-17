@@ -50,7 +50,6 @@ uint16_t FAT_iterator(uint16_t block_index, uint16_t count)
 	return block_index;
 }
 
-
 int block_create(int fd){
 	int index = 0;
 	for (int i = 0; i < superblock.fat_amount * 2048; i++ ) {
@@ -94,30 +93,48 @@ int fat_free_blocks() {
 int fs_mount(const char *diskname)
 {
 	int opendisk = block_disk_open(diskname);
+	int error_flag = 0;
 	if (opendisk == - 1) {
 		return -1;	
 	}
-	block_read(0, &superblock);
-	block_read(superblock.rootdir_blk_index, &root_directory);
+	error_flag = block_read(0, &superblock);
+	if (error_flag != 0) {
+		return -1;
+	}
+
+	error_flag = block_read(superblock.rootdir_blk_index, &root_directory);
+	if (error_flag != 0) {
+		return -1;
+	}
+
 	for ( int i = 0; i < superblock.fat_amount; ++i) {
-		block_read(i+1, &(FAT[(i * BLOCK_SIZE/2)]));
+		error_flag = block_read(i+1, &(FAT[(i * BLOCK_SIZE/2)]));
+		if (error_flag != 0) {
+			return -1;
+		}
 	}
 	return 0;
 }
 
 int fs_umount(void)
 {
-
-	block_write(superblock.rootdir_blk_index, &root_directory);
+	int error_flag = 0;
+	error_flag = block_write(superblock.rootdir_blk_index, &root_directory);
+	if (error_flag != 0) {
+		return -1;
+	}
 	for (int i = 0; i < superblock.fat_amount; ++i) {
-		block_write(i + 1, &(FAT[i * (BLOCK_SIZE/2)]));
+		error_flag = block_write(i + 1, &(FAT[i * (BLOCK_SIZE/2)]));
+		if (error_flag != 0) {
+			return -1;
+		}
 	}
 
-	// for (int i = 0; i < FS_OPEN_MAX_COUNT; ++i) {
-	// 	if (fd_table[i].entry != NULL){
-	// 		return -1;
-	// 	}
-	// }
+	for (int i = 0; i < FS_OPEN_MAX_COUNT; ++i) {
+		if (fd_table[i].entry != NULL){
+			return -1;
+		}
+	}
 	superblock = (const struct superblock){ 0 };
 	memset(FAT, 0, sizeof(FAT));
 	root_directory = (const struct root_directory){ 0 };
