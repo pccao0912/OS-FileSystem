@@ -249,7 +249,11 @@ int fs_read(int fd, void *buf, size_t count)
 	}
 	int remaining = 0;
 	int size_offset = temp_filedesc.entry->file_size - temp_filedesc.offset;
-	//
+	if (size_offset < count){
+		remaining = size_offset;
+	} else {
+		remaining = count;
+	}
 	char * bounce = malloc(BLOCK_SIZE);
 	int buffer_offset = 0;
 	while (remaining > 0) {
