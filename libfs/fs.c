@@ -39,6 +39,21 @@ struct file_descriptor {
 struct superblock superblock;
 struct root_directory root_directory;
 struct file_descriptor fd_table[FS_OPEN_MAX_COUNT];
+uint8_t bounce[BLOCK_SIZE];
+// helper functs
+int block_create(){
+	int index = 0;
+	for (int i = 0; i < superblock.fat_amount * 2048; i++ ) {
+		if (FAT[i] == 0) {
+			index = i;
+			break;
+		}
+		if (FAT[i] != 0 && i == (superblock.fat_amount*2048) -1) {
+			return -1;
+		}
+	}
+	return index;
+}
 
 int fs_mount(const char *diskname)
 {
@@ -49,7 +64,7 @@ int fs_mount(const char *diskname)
 	block_read(0, &superblock);
 	block_read(superblock.rootdir_blk_index, &root_directory);
 	for ( int i = 0; i < superblock.fat_amount; ++i) {
-		block_read(i+1, &(FAT[i * BLOCK_SIZE/2]));
+		block_read(i+1, &(FAT[(i * BLOCK_SIZE/2)]));
 	}
 	return 0;
 }
@@ -169,11 +184,54 @@ int fs_lseek(int fd, size_t offset)
 
 int fs_write(int fd, void *buf, size_t count)
 {
-	/* TODO: Phase 4 */
+	int first_dblock_start = 0;
+	int file_index_directory = 0;
+	int remaining_count = count;
+	int buffer_written = 0; //tracker how much written to buffer
+	int temp_offset_fd = fd_list[fd].offset;//tracker of where to begin
+	int block_offset = temp_offset_fd % BLOCK_SIZE;
+	//get first dblock index
+	for (int i = 0 ; i < FS_FILE_MAX_COUNT ; i++) {
+		if (root_directory.entry_array[i].filename == fd_table[fd].entry->filename) {
+			first_dblock_start = root_directory.entry_array[i].datablk_start_index;
+			file_index_directory = i;
+		}
+	}
+	// create block if file is new
+	if (fd_list[fd].entry->datablk_start_index == 0xFFFF) {
+		int new_block_index = block_create();
+		if (new_block_index == -1) {
+			return 0; //no more space for creating a new block
+		}
+		root_directory.entry_array[file_index_directory].datablk_start_index = new_block_index;
+		first_dblock_start = new_block_index;
+	}
+	// begin writing
+	do {
+		int write_index = (temp_offset_fd/BLOCK_SIZE) + first_dblock_start + superblock.datablk_start_index;
+		block_read(write_index, bounce);
+		if (block_offset + remaining_to_write <= BLOCK_SIZE) {
+			memcpy(bounce+block_offset, buffer_written+ buf, remaining_count);
+			temp_offset_fd += remaining_count;
+			buffer_written += remaining_count;
+			remaining_count = remaining_count - BLOCK_SIZE;
+			block_write(write_index, bounce);
+		} else if (block_offset + remaining_to_write > BLOCK_SIZE) {
+			int amount_can_fit =  BLOCK_SIZE - block_offset;
+			memcpy(bounce+block_offset, buffer_written+ buf, amount_can_fit);
+			temp_offset_fd += amount_can_fit;
+			buffer_written += amount_can_fit;
+			remaining_count = remaining_count - amount_can_fit;
+			block_write(write_index, bounce);
+			int new_block_index = block_create();
+			FAT[write_index] = new_block_index;
+			FAT[new_block_index] = 0xFFFF;
+		}
+	} while (remaining_count >0)
+
 }
 
 int fs_read(int fd, void *buf, size_t count)
 {
 	/* TODO: Phase 4 */
 }
-
