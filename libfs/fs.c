@@ -228,7 +228,10 @@ int fs_write(int fd, void *buf, size_t count)
 			FAT[new_block_index] = 0xFFFF;
 		}
 	} while (remaining_count >0)
-
+	if (fd_list[fd].entry->file_size < fd_list[fd].offset) {
+			fd_list[fd].entry->file_size = fd_list[fd].offset;
+	}
+		
 }
 
 int fs_read(int fd, void *buf, size_t count)
