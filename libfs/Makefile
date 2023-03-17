@@ -8,7 +8,7 @@ deps := $(patsubst %.c,%.o,$(objs))
 all: $(lib)
 
 $(lib): $(objs)
-	ar rcs $(lib) $(objs)
+	ar rcs $(lib) $(deps)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
