@@ -183,7 +183,7 @@ int fs_lseek(int fd, size_t offset)
 int fs_write(int fd, void *buf, size_t count)
 {
 	int first_dblock = 0;
-	struct file_descriptor *temp_filedesc = fd_table[fd];
+	struct file_descriptor temp_filedesc = fd_table[fd];
 	int file_in_direc = 0;
 	for (int i = 0 ; i < FS_FILE_MAX_COUNT ; i++) {
 		if (root_directory.entry_array[i].filename == fd_table[fd].entry->filename) {
@@ -192,12 +192,12 @@ int fs_write(int fd, void *buf, size_t count)
 		}
 	}
 	// create block if file is new
-	if (fd_list[fd].entry->datablk_start_index == 0xFFFF) {
+	if (fd_table[fd].entry->datablk_start_index == 0xFFFF) {
 		int new_block_index = block_create();
 		if (new_block_index == -1) {
 			return 0; //no more space for creating a new block
 		}
-		root_directory.entry_array[file_index_directory].datablk_start_index = new_block_index;
+		root_directory.entry_array[file_in_direc].datablk_start_index = new_block_index;
 		first_dblock = new_block_index;
 		temp_filedesc->entry->datablk_start_index = new_block_index;
 		FAT[new_block_index] = 0xFFFF;
@@ -206,7 +206,7 @@ int fs_write(int fd, void *buf, size_t count)
 	char * bounce_buffer = malloc(BLOCK_SIZE);
 	int buffer_offset = 0;
 	while (remaining > 0) {
-		int aimmed_index  = (temp_filedesc->offset / BLOCK_SIZE) + first_dblock + super_block.datablk_start_index;
+		int aimmed_index  = (temp_filedesc->offset / BLOCK_SIZE) + first_dblock + superblock.datablk_start_index;
 		int block_offset  = temp_filedesc->offset % BLOCK_SIZE;
 		block_read(aimmed_index,bounce);
 		if (block_offset + remaining <= BLOCK_SIZE) {
@@ -215,7 +215,7 @@ int fs_write(int fd, void *buf, size_t count)
 			buffer_offset += remaining;
 			remaining = 0;
 			block_write(aimmed_index,bounce);
-		} else if (block_offset + remaining_to_write > BLOCK_SIZE) {
+		} else if (block_offset + remaining > BLOCK_SIZE) {
 			int block_remain = BLOCK_SIZE - block_offset;
 			memcpy(bounce+block_offset, buf+buffer_offset, block_remain);
 			temp_filedesc->offset += block_remain;
@@ -232,10 +232,11 @@ int fs_write(int fd, void *buf, size_t count)
 	}
 	block_write(super_block->ROOT_DIRECTORY_BLOCK, &root_directory);
 	for (int i = 1; i < superblock.fat_amount + 1; ++i) {
-		block_write(i, &(FAT[i-1 * BLOCK_SIZE/2]))
+		block_write(i, &(FAT[i-1 * BLOCK_SIZE/2]));
 	}
 	return buffer_offset;	
 }
+
 
 int fs_read(int fd, void *buf, size_t count)
 {
