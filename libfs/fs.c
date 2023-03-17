@@ -237,7 +237,36 @@ int fs_write(int fd, void *buf, size_t count)
 	return buffer_offset;
 }
 
-// int fs_read(int fd, void *buf, size_t count)
-// {
-//	
-// }
+int fs_read(int fd, void *buf, size_t count)
+{
+	/* TODO: Phase 4 */
+	int first_dblock = 0;
+	struct file_descriptor temp_filedesc = fd_table[fd];
+	for (int i = 0 ; i < FS_FILE_MAX_COUNT ; i++) {
+		if (root_directory.entry_array[i].filename == fd_table[fd].entry->filename) {
+			first_dblock= root_directory.entry_array[i].datablk_start_index;
+		}
+	}
+	int remaining = 0;
+	int size_offset = temp_filedesc.entry->file_size - temp_filedesc.offset;
+	//
+	char * bounce = malloc(BLOCK_SIZE);
+	int buffer_offset = 0;
+	while (remaining > 0) {
+		int aimmed_index  = (temp_filedesc.offset / BLOCK_SIZE) + first_dblock + superblock.datablk_start_index;
+		int block_offset  = temp_filedesc.offset % BLOCK_SIZE;
+		block_read(aimmed_index, bounce);
+		if (block_offset + remaining <= BLOCK_SIZE) {
+			memcpy(buf + buffer_offset, bounce + block_offset, remaining);
+			temp_filedesc.offset += remaining;
+			buffer_offset += remaining;
+			remaining = 0;
+		} else if (block_offset + remaining > BLOCK_SIZE) {
+			memcpy(buf + buffer_offset, bounce + block_offset, remaining);
+			temp_filedesc.offset += remaining;
+			buffer_offset += remaining;
+			remaining = remaining - BLOCK_SIZE;			
+		}
+	}
+	return buffer_offset;
+}
