@@ -363,11 +363,15 @@ int fs_write(int fd, void *buf, size_t count)
 				iteration_written_count = count - total_written_count;
 		}
 		//read whole block into bounce
-		block_read(current_index +superblock.datablk_start_index, &bounce );
+		int ret = block_read(current_index +superblock.datablk_start_index, &bounce );
+		if (ret < 0) {
+			break;
+		}
 		//copy the aimed area of data into bounce correct position
 		memcpy(&bounce[offset_in_one_block], buf+total_written_count, iteration_written_count);
 		//write back bounce into datablock
-		block_write(current_index +superblock.datablk_start_index, &bounce );
+		 block_write(current_index +superblock.datablk_start_index, &bounce );
+
 		//iterate through FAT[] or create new FAT entry
 		if (FAT[current_index] == 0xFFFF) {
 			int free_index;
@@ -413,7 +417,7 @@ int fs_read(int fd, void *buf, size_t count)
 	if (buf == NULL) {
 		return -1;
 	}
-        if (count == 0){
+    if (count == 0){
 		return 0;
 	}
 	uint32_t total_read_count = 0;
@@ -435,6 +439,7 @@ int fs_read(int fd, void *buf, size_t count)
 		} else {
 				iteration_read_count = count - total_read_count;
 		}
+
 		// Handler small file if the file size is smaller than the iteration read count
 		if (iteration_read_count > file_size) {
 			iteration_read_count = file_size;
