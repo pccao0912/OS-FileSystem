@@ -365,10 +365,7 @@ int fs_write(int fd, void *buf, size_t count)
 		} else {
 				iteration_written_count = count - total_written_count;
 		}
-		int free_FAT= fat_free_blocks();
-		if (free_FAT == 0) {
-			break;
-		}
+
 		//read whole block into bounce
 		block_read(current_index +superblock.datablk_start_index, &bounce );
 		//copy the aimed area of data into bounce correct position
@@ -384,7 +381,7 @@ int fs_write(int fd, void *buf, size_t count)
 					free_index = i;
 					break;
 				}
-				if (j==superblock.fat_amount * (BLOCK_SIZE/2)-1 && FAT[j] != '\0') {
+				if (j==(superblock.fat_amount * (BLOCK_SIZE/2))-1 && FAT[j] != '\0') {
 					return total_written_count;
 				}
 			}
