@@ -359,10 +359,8 @@ int fs_write(int fd, void *buf, size_t count)
 
 	for (int i = 0; i < remaining_block_count; ++i, offset_in_one_block = 0) {
 		//int less_or_equal = 0;
-		int greater = 0;
 		if ( count - total_written_count > (unsigned int)BLOCK_SIZE - offset_in_one_block) {
 				iteration_written_count = (unsigned int)BLOCK_SIZE - offset_in_one_block;
-				greater = 1;
 		} else {
 				iteration_written_count = count - total_written_count;
 				//less_or_equal = 1;
@@ -397,9 +395,6 @@ int fs_write(int fd, void *buf, size_t count)
 			FAT[free_index] = 0xFFFF;
 			current_index = free_index;
 		}else {
-			if (FAT[current_index] == 0xFFFF){
-				return total_written_count;
-			}
 			current_index = FAT_iterator(current_index, 1);
 
 		}
