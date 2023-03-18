@@ -113,6 +113,7 @@ int fs_mount(const char *diskname)
 			return -1;
 		}
 	}
+	// check signature == ECS150FS
 	if (superblock.signature != 0x5346303531534345) {
 		return -1;
 	}
@@ -141,7 +142,7 @@ int fs_umount(void)
 	superblock = (const struct superblock){ 0 };
 	memset(FAT, 0, sizeof(FAT));
 	root_directory = (const struct root_directory){ 0 };
-   	memset(bounce, 0, sizeof(bounce));
+    memset(bounce, 0, sizeof(bounce));
 	return 0;
 }
 
@@ -162,11 +163,24 @@ int fs_info(void)
 
 int fs_create(const char *filename)
 {
+	// FS not mounted
+	if (!superblock.signature) {
+		return -1;
+	}
+	// filename invalid or filename is too long
+	int filename_length = strlen(filename);
+	if (!filename || filename_length >= FS_FILENAME_LEN) {
+		return -1;
+	}
 	int index = 0;
 	for (int i = 0; i < FS_FILE_MAX_COUNT; ++i) {
 		if (root_directory.entry_array[i].filename[0] == '\0') {
 			index = i;
 			break;
+		}
+		// filename already exist
+		if (!strcmp(filename, (char*) root_directory.entry_array[i].filename)) {
+			return -1;
 		}
 	}
 	strcpy((char*)root_directory.entry_array[index].filename, filename);
