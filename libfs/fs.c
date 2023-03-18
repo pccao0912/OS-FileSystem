@@ -384,7 +384,7 @@ int fs_write(int fd, void *buf, size_t count)
 					free_index = i;
 					break;
 				}
-				if (j==superblock.fat_amount * (BLOCK_SIZE/2)-1 && FAT[j] != 0) {
+				if (j==superblock.fat_amount * (BLOCK_SIZE/2)-1 && FAT[j] != '\0') {
 					return total_written_count;
 				}
 			}
