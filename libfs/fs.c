@@ -122,6 +122,10 @@ int fs_mount(const char *diskname)
 
 int fs_umount(void)
 {
+	// No FS mounted
+	if (!superblock.signature) {
+		return -1;
+	}
 	int error_flag = 0;
 	error_flag = block_write(superblock.rootdir_blk_index, &root_directory);
 	if (error_flag != 0) {
@@ -142,7 +146,7 @@ int fs_umount(void)
 	superblock = (const struct superblock){ 0 };
 	memset(FAT, 0, sizeof(FAT));
 	root_directory = (const struct root_directory){ 0 };
-    memset(bounce, 0, sizeof(bounce));
+	memset(bounce, 0, sizeof(bounce));
 	return 0;
 }
 
