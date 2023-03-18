@@ -372,6 +372,7 @@ int fs_read(int fd, void *buf, size_t count)
 	uint16_t offset_in_one_block = fd_table[fd].offset % BLOCK_SIZE;
 	uint16_t current_index;
 	uint16_t iteration_read_count;
+	uint32_t file_size = fd_table[fd].entry->file_size - fd_table[fd].offset;
 	int finish_flag = 0;
 	if (fd_table[fd].entry->file_size == 0) {
 		finish_flag = 1;
@@ -383,6 +384,10 @@ int fs_read(int fd, void *buf, size_t count)
 				iteration_read_count = (unsigned int)BLOCK_SIZE - offset_in_one_block;
 		} else {
 				iteration_read_count = count - total_read_count;
+		}
+		// Handler small file if the file size is smaller than the iteration read count
+		if (iteration_read_count > file_size) {
+			iteration_read_count = file_size;
 		}
 		//read block into bounce buffer
 		block_read(current_index + superblock.datablk_start_index, &bounce);
