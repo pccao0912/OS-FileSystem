@@ -357,6 +357,19 @@ int fs_write(int fd, void *buf, size_t count)
 	} else {
 		current_index = FAT_iterator(fd_table[fd].entry->datablk_start_index, fd_table[fd].offset / BLOCK_SIZE);
 	}
+	if (offset_in_one_block == 0 && fd_table[fd].offset > 0 && current_index == 0xFFFF) {
+		uint16_t last_data_block = FAT_iterator(fd_table[fd].entry->datablk_start_index, (fd_table[fd].offset / BLOCK_SIZE) - 1);
+		int free_index2;
+		for (int i = 1; i < last_data_block; i++) {
+				if (FAT[i] == 0){
+					free_index2 = i;
+					break;
+				}
+			}
+			FAT[current_index] = free_index2;
+			FAT[free_index2] = 0xFFFF;
+			current_index = free_index2;
+	}
 	while (finish_flag != 1) {
 		if ( count - total_written_count >= (unsigned int)BLOCK_SIZE - offset_in_one_block) {
 				iteration_written_count = (unsigned int)BLOCK_SIZE - offset_in_one_block;
