@@ -394,7 +394,11 @@ int fs_write(int fd, void *buf, size_t count)
 			FAT[free_index] = 0xFFFF;
 			current_index = free_index;
 		}else {
+			if (FAT[current_index] == 0xFFFF){
+				return total_written_count;
+			}
 			current_index = FAT_iterator(current_index, 1);
+
 		}
 		total_written_count += iteration_written_count;
 		//update file offset to the end of the current position
