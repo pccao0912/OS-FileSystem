@@ -191,12 +191,30 @@ int fs_create(const char *filename)
 
 int fs_delete(const char *filename)
 {
-	int index = 0;
+	// FS not mounted
+	if (!superblock.signature) {
+		return -1;
+	}
+	// filename is invalid
+	if (!filename || filename == NULL) {
+		return -1;
+	}
+	// check if filename is opened
+	for (int i = 0; i < FS_OPEN_MAX_COUNT; ++i) {
+		if (!strcmp((char*)fd_table[i].entry->filename, filename)) {
+			return -1;
+		}
+	}
+	int index = -1;
 	for (int i = 0; i < FS_FILE_MAX_COUNT; ++i) {
 		if (strcmp((char*)root_directory.entry_array[i].filename, filename) == 0) {
 			index = i;
 			break;
 		}
+	}
+	// if no file named filename
+	if (index == -1) {
+		return -1;
 	}
 	root_directory.entry_array[index].filename[0] = '\0';
 	root_directory.entry_array[index].file_size = 0;
