@@ -123,7 +123,7 @@ int fs_mount(const char *diskname)
 int fs_umount(void)
 {
 	// No FS mounted
-	if (!superblock.signature) {
+	if (!superblock.signature || superblock.signature != 0x5346303531534345) {
 		return -1;
 	}
 	int error_flag = 0;
@@ -168,7 +168,7 @@ int fs_info(void)
 int fs_create(const char *filename)
 {
 	// FS not mounted
-	if (!superblock.signature) {
+	if (!superblock.signature || superblock.signature != 0x5346303531534345) {
 		return -1;
 	}
 	// filename invalid or filename is too long
@@ -196,7 +196,7 @@ int fs_create(const char *filename)
 int fs_delete(const char *filename)
 {
 	// FS not mounted
-	if (!superblock.signature) {
+	if (!superblock.signature || superblock.signature != 0x5346303531534345) {
 		return -1;
 	}
 	// filename is invalid
@@ -236,6 +236,10 @@ int fs_delete(const char *filename)
 
 int fs_ls(void)
 {
+	// FS not mounted
+	if (!superblock.signature || superblock.signature != 0x5346303531534345) {
+		return -1;
+	}
 	fprintf(stdout, "FS Ls:\n");
 	for (int i = 0; i < FS_FILE_MAX_COUNT; i++) {
 		fprintf(stdout, "file: %s, size: %d, data_blk: %d\n", 
