@@ -350,13 +350,14 @@ int fs_write(int fd, void *buf, size_t count)
 	uint16_t offset_in_one_block = fd_table[fd].offset % BLOCK_SIZE;
 	uint16_t current_index;
 	uint16_t iteration_written_count;
+	int finish_flag = 0;
 	// checkif exist data block.
 	if (fd_table[fd].entry->datablk_start_index == 0xFFFF) {
 		current_index = block_create(fd);
 	} else {
 		current_index = FAT_iterator(fd_table[fd].entry->datablk_start_index, fd_table[fd].offset / BLOCK_SIZE);
 	}
-	for (int i = 0; i < (int)((count + offset_in_one_block) / BLOCK_SIZE) + 1; ++i) {
+	while (finish_flag != 1) {
 		if ( count - total_written_count >= (unsigned int)BLOCK_SIZE - offset_in_one_block) {
 				iteration_written_count = (unsigned int)BLOCK_SIZE - offset_in_one_block;
 		} else {
@@ -389,6 +390,10 @@ int fs_write(int fd, void *buf, size_t count)
 		fd_table[fd].offset += iteration_written_count;
 		//since after 1st dblock, their offset are at the beginning of the block
 		offset_in_one_block = 0;
+
+		if(count - total_written_count == 0) {
+			finish_flag =1;
+		}
 	}
 	// update file size by using offset(end of the file)
 	if (fd_table[fd].entry->file_size < fd_table[fd].offset) {
@@ -419,11 +424,12 @@ int fs_read(int fd, void *buf, size_t count)
 	uint16_t current_index;
 	uint16_t iteration_read_count;
 	uint32_t file_size = fd_table[fd].entry->file_size - fd_table[fd].offset;
+	int finish_flag = 0;
 	if (fd_table[fd].entry->file_size == 0) {
-		total_read_count = 0;
+		finish_flag = 1;
 	}
 	current_index = FAT_iterator(fd_table[fd].entry->datablk_start_index, fd_table[fd].offset / BLOCK_SIZE);
-	for (int i = 0; i < (int)((count + offset_in_one_block) / BLOCK_SIZE) + 1; ++i) {
+	while(finish_flag != 1) {
 		//In this way the amount of data each iteration will be restricted according to its size
 		if ( count - total_read_count >= (unsigned int)BLOCK_SIZE - offset_in_one_block) {
 				iteration_read_count = (unsigned int)BLOCK_SIZE - offset_in_one_block;
@@ -442,6 +448,9 @@ int fs_read(int fd, void *buf, size_t count)
 		fd_table[fd].offset += iteration_read_count;
 		//for the following the offset in one block should be 0
 		offset_in_one_block = 0;
+		if (count - total_read_count == 0 ){
+			finish_flag = 1;
+		}
 		if (FAT[current_index] == 0xFFFF) {
 			break;
 		} else {
