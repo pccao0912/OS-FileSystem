@@ -331,6 +331,9 @@ int fs_lseek(int fd, size_t offset)
 
 int fs_write(int fd, void *buf, size_t count)
 {
+	if (fd >= FS_OPEN_MAX_COUNT ) { 
+		return -1;
+	}
 	if (superblock.signature != 0x5346303531534345) {
 		return -1;
 	}
@@ -370,7 +373,7 @@ int fs_write(int fd, void *buf, size_t count)
 		//write back bounce into datablock
 		int ret2 = block_write(current_index +superblock.datablk_start_index, &bounce );
 		if (ret2 < 0) {
-			return -1;
+			finish_flag = 1;
 		}
 		//iterate through FAT[] or create new FAT entry
 		if (FAT[current_index] == 0xFFFF) {
@@ -406,6 +409,9 @@ int fs_write(int fd, void *buf, size_t count)
 
 int fs_read(int fd, void *buf, size_t count)
 {
+	if (fd >= FS_OPEN_MAX_COUNT ) { 
+		return -1;
+	}
 	if (superblock.signature != 0x5346303531534345) {
 		return -1;
 	}
