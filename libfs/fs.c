@@ -357,19 +357,6 @@ int fs_write(int fd, void *buf, size_t count)
 	} else {
 		current_index = FAT_iterator(fd_table[fd].entry->datablk_start_index, fd_table[fd].offset / BLOCK_SIZE);
 	}
-	if (offset_in_one_block == 0 && fd_table[fd].offset > 0 && current_index == 0xFFFF) {
-		uint16_t last_data_block = FAT_iterator(fd_table[fd].entry->datablk_start_index, (fd_table[fd].offset / BLOCK_SIZE) - 1);
-		int free_index2;
-		for (int i = 1; i < last_data_block; i++) {
-				if (FAT[i] == 0){
-					free_index2 = i;
-					break;
-				}
-			}
-			FAT[current_index] = free_index2;
-			FAT[free_index2] = 0xFFFF;
-			current_index = free_index2;
-	}
 	while (finish_flag != 1) {
 		if ( count - total_written_count >= (unsigned int)BLOCK_SIZE - offset_in_one_block) {
 				iteration_written_count = (unsigned int)BLOCK_SIZE - offset_in_one_block;
@@ -377,12 +364,17 @@ int fs_write(int fd, void *buf, size_t count)
 				iteration_written_count = count - total_written_count;
 		}
 		//read whole block into bounce
-		block_read(current_index +superblock.datablk_start_index, &bounce );
+		int ret = block_read(current_index +superblock.datablk_start_index, &bounce );
+		if (ret < 0) {
+			return -1;
+		}
 		//copy the aimed area of data into bounce correct position
 		memcpy(&bounce[offset_in_one_block], buf+total_written_count, iteration_written_count);
 		//write back bounce into datablock
-
-		block_write(current_index +superblock.datablk_start_index, &bounce );
+		int ret2 = block_write(current_index +superblock.datablk_start_index, &bounce );
+		if (ret2 < 0) {
+			return -1;
+		}
 		//iterate through FAT[] or create new FAT entry
 		if (FAT[current_index] == 0xFFFF) {
 			int free_index;
@@ -454,7 +446,10 @@ int fs_read(int fd, void *buf, size_t count)
 			iteration_read_count = file_size;
 		}
 		//read block into bounce buffer
-		block_read(current_index + superblock.datablk_start_index, &bounce);
+		int ret = block_read(current_index + superblock.datablk_start_index, &bounce);
+		if (ret < 0) {
+			return -1;
+		}
 		//copy aimed area memory into buffer size : iteration__read_count position: offset_in_one_block
 		memcpy(buf + total_read_count, &bounce[offset_in_one_block], iteration_read_count);
 		total_read_count += iteration_read_count;
