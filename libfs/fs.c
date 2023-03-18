@@ -358,21 +358,19 @@ int fs_write(int fd, void *buf, size_t count)
 	}
 
 	for (int i = 0; i < remaining_block_count; ++i, offset_in_one_block = 0) {
-		int less_or_equal = 0;
 		int greater = 0;
 		if ( count - total_written_count > (unsigned int)BLOCK_SIZE - offset_in_one_block) {
 				iteration_written_count = (unsigned int)BLOCK_SIZE - offset_in_one_block;
 				greater = 1;
 		} else {
 				iteration_written_count = count - total_written_count;
-				less_or_equal = 1;
 		}
 		int free_FAT= fat_free_blocks();
 		if (free_FAT == 0) {
 			break;
 		}
 		//read whole block into bounce
-		int ret = block_read(current_index +superblock.datablk_start_index, &bounce );
+		block_read(current_index +superblock.datablk_start_index, &bounce );
 		//copy the aimed area of data into bounce correct position
 		memcpy(&bounce[offset_in_one_block], buf+total_written_count, iteration_written_count);
 		//write back bounce into datablock
