@@ -331,6 +331,9 @@ int fs_lseek(int fd, size_t offset)
 
 int fs_write(int fd, void *buf, size_t count)
 {
+	if (fd >= FS_OPEN_MAX_COUNT ) { 
+		return -1;
+	}
 	if (superblock.signature != 0x5346303531534345) {
 		return -1;
 	}
@@ -345,68 +348,56 @@ int fs_write(int fd, void *buf, size_t count)
 	}
 	uint32_t total_written_count = 0;
 	uint16_t offset_in_one_block = fd_table[fd].offset % BLOCK_SIZE;
-	uint16_t remaining_block_count = ((count + offset_in_one_block) / BLOCK_SIZE) + 1;
 	uint16_t current_index;
 	uint16_t iteration_written_count;
-	// int finish_flag = 0;
-	// int finish_next_flag = 0;
+	int finish_flag = 0;
 	// checkif exist data block.
 	if (fd_table[fd].entry->datablk_start_index == 0xFFFF) {
 		current_index = block_create(fd);
 	} else {
 		current_index = FAT_iterator(fd_table[fd].entry->datablk_start_index, fd_table[fd].offset / BLOCK_SIZE);
 	}
-
-	for (int i = 0; i < remaining_block_count; ++i, offset_in_one_block = 0) {
-		//int less_or_equal = 0;
-		if ( count - total_written_count > (unsigned int)BLOCK_SIZE - offset_in_one_block) {
+	while (finish_flag != 1) {
+		if ( count - total_written_count >= (unsigned int)BLOCK_SIZE - offset_in_one_block) {
 				iteration_written_count = (unsigned int)BLOCK_SIZE - offset_in_one_block;
 		} else {
 				iteration_written_count = count - total_written_count;
-				//less_or_equal = 1;
-		}
-		int free_FAT= fat_free_blocks();
-		if (free_FAT == 0) {
-			break;
 		}
 		//read whole block into bounce
 		block_read(current_index +superblock.datablk_start_index, &bounce );
 		//copy the aimed area of data into bounce correct position
 		memcpy(&bounce[offset_in_one_block], buf+total_written_count, iteration_written_count);
-		total_written_count += iteration_written_count;
-		//update file offset to the end of the current position
-		fd_table[fd].offset += iteration_written_count;		
 		//write back bounce into datablock
-		 block_write(current_index +superblock.datablk_start_index, &bounce );
 
+		block_write(current_index +superblock.datablk_start_index, &bounce );
 		//iterate through FAT[] or create new FAT entry
 		if (FAT[current_index] == 0xFFFF) {
-			int free_index = -1;
-			for (int j = 1; j < superblock.fat_amount * (BLOCK_SIZE/2); j++) {
-				if (FAT[j] == 0){
+			int free_index;
+			for (int i = 1; i < superblock.fat_amount * (BLOCK_SIZE/2); i++) {
+				if (FAT[i] == 0){
 					free_index = i;
 					break;
 				}
-			}
-			if(free_index = -1) {
-				return total_written_count;
+				if (i = superblock.fat_amount * (BLOCK_SIZE/2)-1; FAT[i] != '\0'){
+					return total_written_count;
+				}
 			}
 			FAT[current_index] = free_index;
 			FAT[free_index] = 0xFFFF;
 			current_index = free_index;
-		}else {
+		} else {
 			current_index = FAT_iterator(current_index, 1);
-
 		}
-
+		total_written_count += iteration_written_count;
+		//update file offset to the end of the current position
+		fd_table[fd].offset += iteration_written_count;
 		//since after 1st dblock, their offset are at the beginning of the block
-		//offset_in_one_block = 0;
-		// if(finish_next_flag == 1){
-		// 	finish_flag = 1;
-		// }
-		// if(count - total_written_count == 0) {
-		// 	finish_next_flag =1;
-		// }
+		offset_in_one_block = 0;
+		int free_fat ;
+		free_fat = fat_free_blocks();
+		if(count - total_written_count == 0 || free_fat == 0) {
+			finish_flag =1;
+		}
 	}
 	// update file size by using offset(end of the file)
 	if (fd_table[fd].entry->file_size < fd_table[fd].offset) {
@@ -417,6 +408,9 @@ int fs_write(int fd, void *buf, size_t count)
 
 int fs_read(int fd, void *buf, size_t count)
 {
+	if (fd >= FS_OPEN_MAX_COUNT ) { 
+		return -1;
+	}
 	if (superblock.signature != 0x5346303531534345) {
 		return -1;
 	}
@@ -426,47 +420,41 @@ int fs_read(int fd, void *buf, size_t count)
 	if (buf == NULL) {
 		return -1;
 	}
-    if (count == 0){
+        if (count == 0){
 		return 0;
 	}
 	uint32_t total_read_count = 0;
 	uint16_t offset_in_one_block = fd_table[fd].offset % BLOCK_SIZE;
 	uint16_t current_index;
-	uint16_t remaining_block_count = ((count + offset_in_one_block) / BLOCK_SIZE) + 1;
 	uint16_t iteration_read_count;
 	uint32_t file_size = fd_table[fd].entry->file_size - fd_table[fd].offset;
-	// int finish_flag = 0;
-	// int finish_next_flag =0;
+	int finish_flag = 0;
 	if (fd_table[fd].entry->file_size == 0) {
-		remaining_block_count = 0;
+		finish_flag = 1;
 	}
 	current_index = FAT_iterator(fd_table[fd].entry->datablk_start_index, fd_table[fd].offset / BLOCK_SIZE);
-	for (int i = 0; i < remaining_block_count; ++i, offset_in_one_block = 0) {
+	while(finish_flag != 1) {
 		//In this way the amount of data each iteration will be restricted according to its size
 		if ( count - total_read_count >= (unsigned int)BLOCK_SIZE - offset_in_one_block) {
 				iteration_read_count = (unsigned int)BLOCK_SIZE - offset_in_one_block;
 		} else {
 				iteration_read_count = count - total_read_count;
 		}
-
 		// Handler small file if the file size is smaller than the iteration read count
 		if (iteration_read_count > file_size) {
 			iteration_read_count = file_size;
 		}
 		//read block into bounce buffer
-	    block_read(current_index + superblock.datablk_start_index, &bounce);
+		block_read(current_index + superblock.datablk_start_index, &bounce);
 		//copy aimed area memory into buffer size : iteration__read_count position: offset_in_one_block
 		memcpy(buf + total_read_count, &bounce[offset_in_one_block], iteration_read_count);
 		total_read_count += iteration_read_count;
 		fd_table[fd].offset += iteration_read_count;
 		//for the following the offset in one block should be 0
-		// offset_in_one_block = 0;
-		// if(finish_next_flag == 1){
-		// 	finish_flag = 1;
-		// }
-		// if (count - total_read_count == 0 ){
-		// 	finish_next_flag = 1;
-		// }
+		offset_in_one_block = 0;
+		if (count - total_read_count == 0 ){
+			finish_flag = 1;
+		}
 		if (FAT[current_index] == 0xFFFF) {
 			break;
 		} else {
