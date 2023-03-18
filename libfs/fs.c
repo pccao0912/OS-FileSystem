@@ -348,7 +348,7 @@ int fs_write(int fd, void *buf, size_t count)
 	uint16_t current_index;
 	uint16_t iteration_written_count;
 	int finish_flag = 0;
-
+	int finish_next_flag = 0;
 	// checkif exist data block.
 	if (fd_table[fd].entry->datablk_start_index == 0xFFFF) {
 		current_index = block_create(fd);
