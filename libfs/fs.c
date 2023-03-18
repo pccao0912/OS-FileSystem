@@ -358,10 +358,8 @@ int fs_write(int fd, void *buf, size_t count)
 	}
 
 	for (int i = 0; i < remaining_block_count; ++i, offset_in_one_block = 0) {
-		int greater = 0;
 		if ( count - total_written_count > (unsigned int)BLOCK_SIZE - offset_in_one_block) {
 				iteration_written_count = (unsigned int)BLOCK_SIZE - offset_in_one_block;
-				greater = 1;
 		} else {
 				iteration_written_count = count - total_written_count;
 		}
@@ -374,7 +372,7 @@ int fs_write(int fd, void *buf, size_t count)
 		 block_write(current_index +superblock.datablk_start_index, &bounce );
 
 		//iterate through FAT[] or create new FAT entry
-		if (FAT[current_index] == 0xFFFF && greater == 1) {
+		if (FAT[current_index] == 0xFFFF) {
 			int free_index;
 			for (int j = 1; j < superblock.fat_amount * (BLOCK_SIZE/2); j++) {
 				if (FAT[j] == 0){
