@@ -372,7 +372,7 @@ int fs_write(int fd, void *buf, size_t count)
 			break;
 		}
 		//read whole block into bounce
-		int ret = block_read(current_index +superblock.datablk_start_index, &bounce );
+		block_read(current_index +superblock.datablk_start_index, &bounce );
 		//copy the aimed area of data into bounce correct position
 		memcpy(&bounce[offset_in_one_block], buf+total_written_count, iteration_written_count);
 		//write back bounce into datablock
