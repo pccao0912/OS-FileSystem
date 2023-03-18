@@ -252,18 +252,30 @@ int fs_ls(void)
 
 int fs_open(const char *filename)
 {
+	// No FS mounted
+	if (!superblock.signature || superblock.signature != 0x5346303531534345) {
+		return -1;
+	}
+	// filename invalid
+	if (!filename || filename == NULL) {
+		return -1;
+	}
 	int fd_table_index;
 	int file_index = 0;
-	for (int i = 0; i < FS_FILE_MAX_COUNT; i ++) {
-		if (strcmp((char*)root_directory.entry_array[i].filename , filename) == 0) {
+	for (int i = 0; i < FS_FILE_MAX_COUNT; ++i) {
+		if (strcmp((char*)root_directory.entry_array[i].filename, filename) == 0) {
 			file_index = i;
 			break;
 		}
 	}
-	for (int j = 0; j < FS_OPEN_MAX_COUNT; j ++) {
+	for (int j = 0; j < FS_OPEN_MAX_COUNT; ++j) {
 		if (fd_table[j].entry == NULL) {
 			fd_table_index = j;
 			break;
+		}
+		// there are already %FS_OPEN_MAX_COUNT files currently open
+		if (j == FS_OPEN_MAX_COUNT) {
+			return -1;
 		}
 	}
 	fd_table[fd_table_index].entry = &(root_directory.entry_array[file_index]);
