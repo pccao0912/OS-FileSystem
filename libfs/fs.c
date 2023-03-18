@@ -357,7 +357,7 @@ int fs_write(int fd, void *buf, size_t count)
 	} else {
 		current_index = FAT_iterator(fd_table[fd].entry->datablk_start_index, fd_table[fd].offset / BLOCK_SIZE);
 	}
-	while (finish_flag != 1) {
+	for (int i = 0; i < ((count + offset_in_one_block) / BLOCK_SIZE) + 1; ++i) {
 		if ( count - total_written_count >= (unsigned int)BLOCK_SIZE - offset_in_one_block) {
 				iteration_written_count = (unsigned int)BLOCK_SIZE - offset_in_one_block;
 		} else {
@@ -378,9 +378,6 @@ int fs_write(int fd, void *buf, size_t count)
 					free_index = i;
 					break;
 				}
-				if (i == superblock.fat_amount * (BLOCK_SIZE/2)-1 && FAT[i] != '\0'){
-					return total_written_count;
-				}
 			}
 			FAT[current_index] = free_index;
 			FAT[free_index] = 0xFFFF;
@@ -393,11 +390,6 @@ int fs_write(int fd, void *buf, size_t count)
 		fd_table[fd].offset += iteration_written_count;
 		//since after 1st dblock, their offset are at the beginning of the block
 		offset_in_one_block = 0;
-		// int free_fat ;
-		// free_fat = fat_free_blocks();
-		if(count - total_written_count == 0) {
-			finish_flag =1;
-		}
 	}
 	// update file size by using offset(end of the file)
 	if (fd_table[fd].entry->file_size < fd_table[fd].offset) {
@@ -433,7 +425,7 @@ int fs_read(int fd, void *buf, size_t count)
 		finish_flag = 1;
 	}
 	current_index = FAT_iterator(fd_table[fd].entry->datablk_start_index, fd_table[fd].offset / BLOCK_SIZE);
-	while(finish_flag != 1) {
+	for (int i = 0; i < ((count + offset_in_one_block) / BLOCK_SIZE) + 1; ++i) {
 		//In this way the amount of data each iteration will be restricted according to its size
 		if ( count - total_read_count >= (unsigned int)BLOCK_SIZE - offset_in_one_block) {
 				iteration_read_count = (unsigned int)BLOCK_SIZE - offset_in_one_block;
@@ -452,9 +444,6 @@ int fs_read(int fd, void *buf, size_t count)
 		fd_table[fd].offset += iteration_read_count;
 		//for the following the offset in one block should be 0
 		offset_in_one_block = 0;
-		if (count - total_read_count == 0 ){
-			finish_flag = 1;
-		}
 		if (FAT[current_index] == 0xFFFF) {
 			break;
 		} else {
