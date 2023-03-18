@@ -374,18 +374,20 @@ int fs_write(int fd, void *buf, size_t count)
 		//iterate through FAT[] or create new FAT entry
 		if (FAT[current_index] == 0xFFFF) {
 			int free_index;
+			int free_index_count = fat_free_blocks();
 			for (int j = 1; j < superblock.fat_amount * (BLOCK_SIZE/2); j++) {
 				if (FAT[j] == '\0'){
 					free_index = i;
 					break;
 				}
-				if (j==(superblock.fat_amount * (BLOCK_SIZE/2))-1 && FAT[j] != '\0') {
-					return total_written_count;
-				}
 			}
+			if (free_index_count > 1) {
 			FAT[current_index] = free_index;
 			FAT[free_index] = 0xFFFF;
 			current_index = free_index;
+			} else {
+				return total_written_count;
+			}
 		} else {
 			current_index = FAT_iterator(current_index, 1);
 		}
