@@ -378,7 +378,7 @@ int fs_write(int fd, void *buf, size_t count)
 					free_index = i;
 					break;
 				}
-				if (i == superblock.fat_amount * (BLOCK_SIZE/2)-1; FAT[i] != '\0'){
+				if (i == superblock.fat_amount * (BLOCK_SIZE/2)-1 && FAT[i] != '\0'){
 					return total_written_count;
 				}
 			}
@@ -393,9 +393,9 @@ int fs_write(int fd, void *buf, size_t count)
 		fd_table[fd].offset += iteration_written_count;
 		//since after 1st dblock, their offset are at the beginning of the block
 		offset_in_one_block = 0;
-		int free_fat ;
-		free_fat = fat_free_blocks();
-		if(count - total_written_count == 0 || free_fat == 0) {
+		// int free_fat ;
+		// free_fat = fat_free_blocks();
+		if(count - total_written_count == 0) {
 			finish_flag =1;
 		}
 	}
