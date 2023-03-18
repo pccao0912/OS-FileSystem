@@ -358,10 +358,14 @@ int fs_write(int fd, void *buf, size_t count)
 	}
 
 	for (int i = 0; i < remaining_block_count; ++i, offset_in_one_block = 0) {
+		int greater = 0;
+		int less_or_equal = 0;
 		if ( count - total_written_count > (unsigned int)BLOCK_SIZE - offset_in_one_block) {
 				iteration_written_count = (unsigned int)BLOCK_SIZE - offset_in_one_block;
+				greater =1;
 		} else {
 				iteration_written_count = count - total_written_count;
+				less_or_equal =1;
 		}
 
 		//read whole block into bounce
@@ -372,22 +376,21 @@ int fs_write(int fd, void *buf, size_t count)
 		 block_write(current_index +superblock.datablk_start_index, &bounce );
 
 		//iterate through FAT[] or create new FAT entry
-		if (FAT[current_index] == 0xFFFF) {
+		if (FAT[current_index] == 0xFFFF && greater == 1 && less_or_equal ==1 ) {
 			int free_index;
-			int free_index_count = fat_free_blocks();
 			for (int j = 1; j < superblock.fat_amount * (BLOCK_SIZE/2); j++) {
 				if (FAT[j] == '\0'){
 					free_index = i;
 					break;
 				}
+				if (j = superblock.fat_amount * (BLOCK_SIZE/2)-1 && FAT[j] != '\0'){
+					return total_written_count;
+				}
 			}
-			if (free_index_count > 1) {
+			
 			FAT[current_index] = free_index;
 			FAT[free_index] = 0xFFFF;
 			current_index = free_index;
-			} else {
-				return total_written_count;
-			}
 		} else {
 			current_index = FAT_iterator(current_index, 1);
 		}
