@@ -312,6 +312,19 @@ int fs_stat(int fd)
 
 int fs_lseek(int fd, size_t offset)
 {
+	// No FS mounted
+	if (!superblock.signature || superblock.signature != 0x5346303531534345) {
+		return -1;
+	}
+	// if file descriptor @fd is invalid (out of bounds or not currently open)
+	if (fd >= FS_OPEN_MAX_COUNT || !fd_table[fd].entry) {
+		return -1;
+	}
+	// if @offset is larger than the current file size
+	size_t current_file_size = fs_stat(fd);
+	if (current_file_size < offset) {
+		return -1;
+	}
 	fd_table[fd].offset = offset;
 	return 0;
 }
