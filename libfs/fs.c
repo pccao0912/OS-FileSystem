@@ -358,41 +358,46 @@ int fs_write(int fd, void *buf, size_t count)
 	}
 
 	for (int i = 0; i < remaining_block_count; ++i, offset_in_one_block = 0) {
-		int greater = 0;
 		int less_or_equal = 0;
+		int greater = 0;
 		if ( count - total_written_count > (unsigned int)BLOCK_SIZE - offset_in_one_block) {
 				iteration_written_count = (unsigned int)BLOCK_SIZE - offset_in_one_block;
-				greater =1;
+				greater = 1;
 		} else {
 				iteration_written_count = count - total_written_count;
-				less_or_equal =1;
+				less_or_equal = 1;
 		}
-
+		int free_FAT= fat_free_blocks();
+		if (free_FAT == 0) {
+			break;
+		}
 		//read whole block into bounce
-		block_read(current_index +superblock.datablk_start_index, &bounce );
+		int ret = block_read(current_index +superblock.datablk_start_index, &bounce );
 		//copy the aimed area of data into bounce correct position
 		memcpy(&bounce[offset_in_one_block], buf+total_written_count, iteration_written_count);
 		//write back bounce into datablock
 		 block_write(current_index +superblock.datablk_start_index, &bounce );
 
 		//iterate through FAT[] or create new FAT entry
-		if (FAT[current_index] == 0xFFFF && greater == 1 && less_or_equal ==1 ) {
+		if (FAT[current_index] == 0xFFFF && greater == 1) {
 			int free_index;
 			for (int j = 1; j < superblock.fat_amount * (BLOCK_SIZE/2); j++) {
-				if (FAT[j] == '\0'){
+				if (FAT[j] == 0){
 					free_index = i;
 					break;
 				}
-				if (j = superblock.fat_amount * (BLOCK_SIZE/2)-1 && FAT[j] != '\0'){
+				if (j==superblock.fat_amount * (BLOCK_SIZE/2)-1 && FAT[j] != 0) {
 					return total_written_count;
 				}
 			}
-			
 			FAT[current_index] = free_index;
 			FAT[free_index] = 0xFFFF;
 			current_index = free_index;
-		} else {
+		}else {
 			current_index = FAT_iterator(current_index, 1);
+			if (current_index == 0xFFFF){
+				return total_written_count;
+			}
 		}
 		total_written_count += iteration_written_count;
 		//update file offset to the end of the current position
